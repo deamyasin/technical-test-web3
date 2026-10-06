@@ -5,3 +5,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Internal assessment notes kept locally
+/ACCEPTANCE.md

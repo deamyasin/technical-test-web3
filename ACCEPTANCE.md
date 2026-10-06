@@ -40,10 +40,19 @@ Acceptance profil: akun dengan pembelian, akun kosong, hasil transfer, bought-bu
 
 | Bonus | Status |
 | --- | --- |
-| Launch nama kandidat + TEST | Belum tersedia; perlu canLaunch, nama kandidat dan transaksi nyata. |
-| Sell approve + sell | Belum tersedia. |
-| Detail description/creator + CurveBuy/CurveSell | Belum lengkap; history profil bukan halaman detail token. |
-| Search/sort | Search nama/simbol/alamat ada, sort aktif dahulu/progres terbesar otomatis; kontrol sort manual belum ada. |
-| createGraduatedPool phase 1 | Belum tersedia. |
+| Launch nama kandidat + TEST | Form tersedia: overload 3 args, config1/ETH, fresh fee/economics, random salt dan canLaunch. Encoding ABI + render lolos; launch nyata memakai nama kandidat belum dibuktikan. |
+| Sell approve + sell | Tersedia pada detail token: exact approve, receipt, sell/slippage dan CurveSell output. Rumus diperiksa terhadap source, parser/invariant fee lolos; dua transaksi nyata masih perlu diuji. |
+| Detail description/creator + CurveBuy/CurveSell | Halaman detail tersedia dengan metadata/creator/fee/socials dan aktivitas token. Pembacaan metadata dan aktivitas nyata lolos; belum ada event sell nyata yang teramati saat audit. |
+| Search/sort | Search dan filter phase tersedia, sort manual progress/newest/name tersedia. Activity dapat difilter buy/sell dan dicari. |
+| createGraduatedPool phase 1 | Tombol dan simulasi/transaksi/refetch tersedia, gated phase1. Token contoh tidak menyediakan phase1; pengujian nyata belum dilakukan. |
 
 Bonus tidak diwajibkan agar inti terpenuhi. Sebelum penyerahan: lengkapi bukti MetaMask/error/refetch, push + clone verification, dan redeploy fitur profil. Jangan menyatakan semua test lolos berdasarkan build saja.
+
+
+## Halaman tambahan dan bukti terbaru
+
+Explore, wallet, create, activity, guide, dan token detail memiliki URL hash/deep link. Provider fixture read-only dipakai untuk visual dengan data chain nyata; tidak ada signature/transaksi write dari Codex. Buy/Sell/Launch/Graduation memakai global transaction lock; pending action tetap mounted ketika navigasi.
+
+Pemeriksaan read-only terakhir: lima token, tujuh event buy, belum ada event sell, tiga trade wallet; metadata/token activity/dedupe berhasil. Token parser menolak precision berlebih, fee round-trip buy→sell menurunkan ETH sesuai biaya, unsafe URL ditolak, encoding launch tiga argumen dan nested NotWhitelisted diterjemahkan. Render halaman pendukung 1440/375 px tidak overflow, deep-link reload berhasil, runtime exceptions nol.
+
+**Tetap belum boleh disebut seluruh acceptance terpenuhi:** hasil write MetaMask bonus, reject/revert UI inti, post-buy refetch visual, token discovery baru, submission/push, clone baru dan laporan source mismatch harus memiliki bukti. Penyerahan repository terbaru menurut Luna gagal autentikasi GitHub; kandidat perlu login/push lewat perangkatnya. Bonus hanya tuntas jika transaksi benar-benar berhasil, bukan sekadar form tersedia.

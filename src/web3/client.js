@@ -177,16 +177,26 @@ export function translateError(error) {
     CurveGraduated: 'Token sudah tidak dijual di bonding curve. Pilih token lain.',
     ZeroAmount: 'Jumlah beli terlalu kecil. Masukkan jumlah ETH yang lebih besar.',
     NativeValueMismatch: 'Jumlah ETH transaksi tidak sesuai. Perbarui form dan coba lagi.',
+    NotWhitelisted: 'Wallet belum diizinkan launch. Minta pengawas memberi akses untuk alamat ini.',
+    LaunchEconomicsMismatch: 'Konfigurasi launch berubah. Perbarui data lalu coba launch lagi.',
+    LaunchFeeNotPaid: 'Launch fee berubah atau tidak sesuai. Perbarui data dan ulangi.',
+    InvalidTokenParams: 'Parameter token ditolak. Periksa nama, ticker, dan metadata.',
+    WrongGraduationPhase: 'Status token berubah; pool tidak bisa dibuat pada phase sekarang.',
+    NothingToGraduate: 'Tidak ada token yang siap graduation.',
+    NotReadyToGraduate: 'Curve belum siap graduation. Tunggu target tercapai.',
+    ERC20InsufficientAllowance: 'Allowance belum cukup. Approve jumlah token sebelum menjual.',
+    ERC20InsufficientBalance: 'Saldo token tidak cukup untuk jumlah jual.',
   };
   for (const item of chain) {
     let name = item.data?.errorName || item.errorName;
     const data = typeof item.data === 'string' ? item.data : item.data?.data;
     if (!name && typeof data === 'string' && data.startsWith('0x')) {
-      try { name = decodeErrorResult({ abi: curveAbi, data }).errorName; } catch { /* Unknown revert. */ }
+      try { name = decodeErrorResult({ abi: [...curveAbi, ...factoryAbi, ...tokenAbi], data }).errorName; } catch { /* Unknown revert. */ }
     }
     if (named[name]) return named[name];
   }
   if (/insufficient funds|exceeds the balance|insufficient_gas_balance/.test(message)) return 'Saldo ETH tidak cukup untuk pembelian dan biaya gas. Kurangi jumlah beli.';
+  if (message.includes('launch_not_allowed')) return 'Wallet belum diizinkan launch. Minta pengawas mengaktifkan canLaunch untuk alamat ini.';
   if (message.includes('no_wallet')) return 'MetaMask belum terdeteksi. Buka aplikasi di browser dengan MetaMask.';
   if (/wrong_chain|chain mismatch/.test(message)) return 'Pindah ke Robinhood Chain Testnet sebelum membeli.';
   if (message.includes('account_changed')) return 'Akun wallet berubah. Periksa akun dan ulangi pembelian.';

@@ -1,6 +1,6 @@
 # Launchpad — Robinhood Chain Testnet
 
-Frontend React untuk menemukan token dari event factory, menampilkan data bonding curve, dan membeli token melalui MetaMask. Dibuat untuk brief technical test fullstack Web3 enam jam.
+dApp React untuk discovery token, buy/sell bonding curve, launch token, profil wallet, aktivitas, dan graduation melalui MetaMask. Dibuat untuk brief technical test fullstack Web3 enam jam.
 
 ## Menjalankan
 
@@ -35,9 +35,30 @@ Jika berpindah Windows ↔ WSL/Linux, jalankan `npm ci` pada platform tujuan. De
 - **Output aktual:** decode `CurveBuy` dari alamat curve dan recipient yang benar; hash mengikuti replacement transaksi. Estimasi tidak pernah dipakai sebagai output sukses. Sesudah berhasil, data kartu, ETH, dan saldo token diambil ulang tanpa reload.
 - **UI:** tema charcoal + acid lime, tipografi Space Grotesk/IBM Plex Mono self-hosted dengan lisensi OFL di `public/fonts`, ilustrasi orbital SVG dekoratif, ringkasan dari data chain, grid kartu desktop, dan panel trading sticky. Mobile memakai satu kolom; memilih kartu membawa pengguna ke form. Placeholder geometris memakai warna deterministik dari alamat. State loading/empty/error, badge semua phase, alasan buy nonaktif, dan link explorer tetap tersedia. Ilustrasi hero tidak merepresentasikan data harga atau prediksi.
 
+## Halaman dan alur dApp
+
+| URL hash | Halaman | Fungsi |
+| --- | --- | --- |
+| `#/explore` | Explore | Discovery, search, filter phase, sort progress/newest/name, dan buy. |
+| `#/wallet` | My wallet | Saldo ETH/token, token pernah dibeli, history buy/sell wallet, explorer. |
+| `#/launch` | Create | Launch config 1 pair ETH, nama/ticker/logo/description/website, creator tax 0–10%, buyback. |
+| `#/activity` | Activity | Event CurveBuy/CurveSell factory ini, filter buy/sell, search wallet/hash/token, pagination 20. |
+| `#/token/<address>` | Token detail | Metadata/creator/fees, aktivitas token, tautan buy, approve/sell, graduation phase 1. |
+| `#/guide` | Guide | Alur connect/faucet/discover/buy/sell/launch, arti phase dan fee/slippage. |
+
+Hash routing mendukung bookmark, reload deep link, dan browser back/forward tanpa konfigurasi rewrite hosting tambahan. Halaman transaksi tetap mounted ketika view berpindah; satu transaksi aktif memblokir transaksi lain.
+
+**Launch:** memakai overload tiga argumen, `launchConfigId=1`, pair ETH. `canLaunch`, fee dan expectedEconomics dibaca ulang sebelum transaksi; `value` persis launchFee; salt 32-byte acak baru setiap percobaan; creator recipient default wallet pengirim. Nama/ticker divalidasi 64/16 byte UTF-8. Untuk bonus tes, masukkan nama lengkap kandidat dan ticker TEST. Nama kandidat tidak di-hardcode.
+
+**Sell:** approve curve dengan jumlah tepat jika allowance kurang, tunggu receipt, lalu klik Sell untuk transaksi kedua. Estimasi memakai `gross = tokensIn * quoteReserve / (tokenReserve + tokensIn)`, kemudian fee dan creator tax dipotong dari gross dengan floor bigint sesuai source. `minQuoteOut` menerapkan slippage. Gas/simulasi/account/network diperiksa sebelum setiap write; ETH diterima dibaca dari CurveSell, bukan estimasi.
+
+**Graduation:** hanya token phase 1 yang menawarkan createGraduatedPool; setelah sukses phase dan daftar di-refetch. Token phase 2/3 tidak dapat dibeli/dijual di curve. Aplikasi tidak menyediakan swap pool v4; link explorer tersedia.
+
+Semua transaksi bonus memakai simulation, awaiting-wallet/pending/success/error/unknown receipt + retry, replacement hash, validasi destination receipt, serta pemeriksaan event yang relevan. Source/ABI dan render telah diperiksa; transaksi bonus nyata masih perlu diuji Muse/Luna.
+
 ## My wallet / profil
 
-Tab **My wallet** menampilkan identitas wallet, saldo ETH, token yang dimiliki atau pernah dibeli, dan riwayat pembelian. Saldo token dibaca dari `balanceOf` via Multicall3; riwayat dibangun dari event `CurveBuy` sejak deployment dengan recipient wallet. Pengambilan event memakai chunk maksimal 50.000 blok dan concurrency tiga. Cache riwayat hanya di memori dan scoped per account/curves; reload akan mengambil ulang history dari chain.
+Tab **My wallet** menampilkan identitas wallet, saldo ETH, token yang dimiliki atau pernah dibeli, dan riwayat pembelian. Saldo token dibaca dari `balanceOf` via Multicall3; riwayat dibangun dari event `CurveBuy` dan `CurveSell` sejak deployment dengan recipient wallet. Pengambilan event memakai chunk maksimal 50.000 blok dan concurrency tiga. Cache riwayat hanya di memori dan scoped per account/curves; reload akan mengambil ulang history dari chain.
 
 Saldo saat ini berbeda dari total token pernah dibeli: hasil transfer dapat muncul tanpa history buy, dan token yang ditransfer keluar dapat bersaldo nol meskipun punya history. ETH spent menghitung quote input aktual pada event dengan buyer wallet sendiri, tanpa gas; pembelian hadiah oleh wallet lain tidak dimasukkan ke spent. Tidak menampilkan PNL atau nilai jual yang belum diverifikasi.
 
@@ -59,7 +80,7 @@ Source curve dibaca dari [Sourcify API v2](https://sourcify.dev/server/v2/contra
 
 Implementasi/build dan visual desktop/mobile diperiksa Codex. Luna mencatat discovery 5/5 token, pembelian testnet EARLY 0.002 ETH sukses, serta deployment. Codex juga memverifikasi history profil terhadap receipt pembelian tersebut, saldo token aktual dan dedupe incremental secara read-only. Testing MetaMask UI lengkap, clone baru, dan penyerahan repository tetap memerlukan bukti tambahan dari Muse/Luna. Catatan hasil aktual dicatat bersama di `../log-ai.txt`; jangan menganggap daftar fitur sebagai bukti bahwa testing sudah lolos.
 
-- Belum ada bonus launch, sell, halaman detail token lengkap, atau create graduated pool. Search nama/simbol/alamat serta history pembelian wallet sudah tersedia.
+- Launch, sell, detail, activity, sort/filter dan create graduated pool sudah diimplementasikan. Transaksi bonus nyata (launch dengan nama kandidat, approval/sell, phase 1 graduation) belum memiliki bukti testing MetaMask.
 - Discovery menggunakan polling dan RPC publik; riwayat sangat panjang akan meningkatkan waktu initial load. Belum ada indexer, persistent cache, atau rekonsiliasi reorg.
 - Gas check memakai estimasi dengan headroom 20%; biaya aktual dan state chain dapat berubah sesudah simulasi.
 - Output form merupakan estimasi dari snapshot reserve. Receipt menjadi sumber output aktual; refund/partial fill dapat membuat jumlah aktual berbeda.
@@ -74,7 +95,13 @@ Screenshot desain terbaru dari aplikasi yang berjalan lokal dengan data chain ny
 - [Mobile 375 px](screenshots/web3-mobile.png)
 - [Profil desktop](screenshots/profile-desktop.png)
 - [Profil mobile](screenshots/profile-mobile.png)
+- [Create desktop](screenshots/launch-desktop.png) / [mobile](screenshots/launch-mobile.png)
+- [Activity desktop](screenshots/activity-desktop.png) / [mobile](screenshots/activity-mobile.png)
+- [Token detail desktop](screenshots/token-detail-desktop.png) / [mobile](screenshots/token-detail-mobile.png)
+- [Guide desktop](screenshots/guide-desktop.png) / [mobile](screenshots/guide-mobile.png)
 
 Codex memeriksa render dengan Chromium headless: lima kartu tampil dan lebar konten mobile sama dengan viewport 375 px. Screenshot ini menunjukkan UI tanpa wallet terhubung; pengujian MetaMask dan video transaksi tetap ditangani Muse/Luna. Deployment desain baru perlu mengunggah seluruh `dist`, termasuk folder `fonts`.
 
 Screenshot profil menggunakan provider wallet read-only sebagai fixture koneksi, dengan saldo dan event dari chain nyata untuk penerima transaksi Luna. Tidak menggunakan private key dan tidak menandatangani transaksi. Render profil terverifikasi (dua kepemilikan, dua event pembelian, tanpa overflow 375px); fixture ini bukan pengganti pengujian MetaMask asli.
+
+Halaman pendukung juga diuji render dengan provider read-only dan data chain nyata. Encoding launch overload, error factory, parser token precision, invariant round-trip fee, URL safety, dedupe activity dan metadata diperiksa tanpa transaksi write. Deep-link token setelah reload berhasil dan tidak ada runtime exception. Hasil ini bukan bukti transaksi bonus sudah berhasil.

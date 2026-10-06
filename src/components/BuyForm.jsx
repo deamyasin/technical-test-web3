@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseEthInput, estimateBuy, applySlippage, formatEth, formatTokens, prepareBuy, buyToken, waitBuyReceipt, translateError, txUrl, getTokenBalance, shortAddress } from '../web3/client.js';
 const SLIPPAGES = [50, 100, 500];
 
-export default function BuyForm({ token, account, ethBalance, wrongChain, onBought, onBusy, balanceVersion, onRefresh }) {
+export default function BuyForm({ token, account, ethBalance, wrongChain, onBought, onBusy, balanceVersion, onRefresh, externalBusy = false }) {
   const [ethIn, setEthIn] = useState('');
   const [slippage, setSlippage] = useState(100);
   const [tokenBal, setTokenBal] = useState(null);
@@ -35,7 +35,7 @@ export default function BuyForm({ token, account, ethBalance, wrongChain, onBoug
     ? estimateBuy(quoteIn, token.feeBps, token.creatorTaxBps, token.quoteReserve, token.tokenReserve, token.snipeTaxBps) : null,
   [quoteIn, token, recipientMatches]);
   const minOut = est ? applySlippage(est.tokensOut, slippage) : 0n;
-  const baseReason = !account ? 'Hubungkan wallet dulu'
+  const baseReason = externalBusy && !busy ? 'Transaksi lain sedang diproses' : !account ? 'Hubungkan wallet dulu'
     : wrongChain ? 'Pindah ke Robinhood Testnet'
       : !token.dataValid ? 'Data token belum tersedia'
         : !recipientMatches ? 'Perbarui estimasi wallet'

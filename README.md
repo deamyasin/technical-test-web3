@@ -1,13 +1,16 @@
 # Launchpad — Robinhood Chain Testnet
 
-dApp React untuk discovery token, buy/sell bonding curve, launch token, profil wallet, aktivitas, dan graduation melalui MetaMask. Dibuat untuk brief technical test fullstack Web3 enam jam.
+**Live dApp:** [technical-test.dea.web.id](https://technical-test.dea.web.id/) · **Repository:** [deamyasin/technical-test-web3](https://github.com/deamyasin/technical-test-web3)
+
+dApp React untuk discovery token, buy/sell bonding curve, launch token, profil wallet, aktivitas, dan graduation melalui RainbowKit + Wagmi + WalletConnect. Dibuat untuk brief technical test fullstack Web3 enam jam.
 
 ## Menjalankan
 
-Prasyarat: Node.js 20.19+ atau 22.12+, npm, dan Chrome/Chromium dengan MetaMask.
+Prasyarat: Node.js 20.19+ atau 22.12+, npm, dan wallet EVM (extension atau aplikasi mobile).
 
 ```bash
 npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -18,19 +21,27 @@ npm run build
 npm run preview
 ```
 
-Tidak diperlukan environment variable, private key, atau backend. Semua transaksi ditandatangani MetaMask. Jangan memasukkan seed/private key ke source atau repository.
+Untuk koneksi aplikasi mobile/QR, buat Project ID publik di [Reown Dashboard](https://dashboard.reown.com), salin `.env.example` ke `.env.local`, lalu isi (contoh sudah memuat Project ID publik project ini):
+
+```dotenv
+VITE_WALLETCONNECT_PROJECT_ID=<project-id-publik-32-karakter-hex>
+```
+
+Tambahkan `https://technical-test.dea.web.id` dan origin development pada allowlist project. Restart Vite atau build ulang setelah mengubah env; env Vite ditanam saat build. Project ID ini publik, bukan private key wallet. Tanpa ID valid, modal tetap mendeteksi injected/EIP-6963 (termasuk browser aplikasi MetaMask), tetapi QR/deep link WalletConnect tidak diaktifkan. Tautan “Buka di MetaMask” tersedia sebagai fallback mobile. Safari/Chrome mobile tidak dapat mendeteksi seluruh aplikasi terpasang secara langsung; koneksi dilakukan lewat WalletConnect atau browser internal wallet.
+
+Tidak memerlukan private key atau backend. Semua transaksi ditandatangani wallet pilihan pengguna. Jangan memasukkan seed/private key ke source atau repository.
 
 Jika berpindah Windows ↔ WSL/Linux, jalankan `npm ci` pada platform tujuan. Dependency native Vite/Rollup/esbuild harus cocok dengan sistem operasi. Jangan menjalankan install bersamaan dengan build/deployment agent lain.
 
 ## Keputusan teknis
 
-- **Vite + React + viem:** sesuai kebutuhan satu chain; tidak memerlukan server atau kontrak baru. ABI lengkap terlampir disimpan di `src/web3/abi`, sehingga signature fungsi/event/error mengikuti brief.
+- **Vite + React + viem + Wagmi + RainbowKit:** sesuai kebutuhan satu chain; tidak memerlukan server atau kontrak baru. ABI lengkap terlampir disimpan di `src/web3/abi`, sehingga signature fungsi/event/error mengikuti brief.
 - **Discovery dari event `TokenLaunched`:** sejak blok `129157568`, rentang inklusif maksimal 50.000 blok, maksimal tiga request log bersamaan, dedupe berdasarkan alamat. Alamat token contoh tidak di-hardcode. **Hanya pair ETH (`address(0)`) yang ditampilkan**, karena pair ERC-20 memerlukan unit harga dan alur pembayaran/approval berbeda.
 - **Multicall3 `allowFailure`:** metadata diberi fallback; kegagalan data wajib transaksi memblokir buy. Pembacaan metadata/reserve/fee/phase menggunakan satu snapshot block per refresh. Viem dapat memecah batch sesuai batas ukuran calldata; tidak diasumsikan selalu tepat satu RPC request.
 - **RPC:** endpoint resmi Robinhood digunakan terlebih dahulu, dengan fallback otomatis ke publicnode jika request gagal. URL dan parameter chain ada di `src/web3/chain.js`.
 - **Polling 20 detik + refresh manual:** menangkap token baru dan memperbarui token lama karena reserve/phase dapat berubah akibat transaksi orang lain. Cursor disimpan setelah discovery dan pembacaan selesai. Refresh diserialisasi agar request tidak menimpa satu sama lain.
 - **Bigint:** input divalidasi sebelum `parseEther`, maksimal 18 desimal. Fee, creator tax, snipe tax, curve output, dan slippage dihitung dengan pembagian floor. Progres dijepit ke 100% sebelum format. Harga memakai presisi tambahan agar harga di bawah satu wei per token tetap terbaca. Format UI bukan nilai yang dikirim ke kontrak.
-- **Wallet:** injected MetaMask, add/switch chain, listener akun/network/disconnect dengan cleanup, serta perlindungan terhadap respons saldo untuk akun lama.
+- **Wallet:** RainbowKit dark/lime; MetaMask, Rainbow, Trust Wallet dan WalletConnect jika Project ID tersedia; discovery EIP-6963 untuk extension, reconnect sesi, account modal, disconnect sungguhan, dan add/switch chain melalui connector terpilih. Semua write memeriksa akun/network provider connector. Respons saldo akun lama diabaikan.
 - **Transaksi:** simulasi dan gas diperiksa otomatis setelah input berhenti 450 ms; tombol beli aktif setelah saldo termasuk headroom gas terverifikasi. Simulasi diulang sebelum pengiriman, disertai pemeriksaan akun/network sebelum write, `value = quoteIn`, recipient wallet. State memisahkan pemeriksaan, konfirmasi wallet, pending, sukses, gagal, dan status receipt yang belum diketahui. Jika receipt belum terbaca, buy tetap dikunci dan tersedia pengecekan ulang tanpa mengirim transaksi kedua.
 - **Output aktual:** decode `CurveBuy` dari alamat curve dan recipient yang benar; hash mengikuti replacement transaksi. Estimasi tidak pernah dipakai sebagai output sukses. Sesudah berhasil, data kartu, ETH, dan saldo token diambil ulang tanpa reload.
 - **UI:** tema charcoal + acid lime, tipografi Space Grotesk/IBM Plex Mono self-hosted dengan lisensi OFL di `public/fonts`, ilustrasi orbital SVG dekoratif, ringkasan dari data chain, grid kartu desktop, dan panel trading sticky. Mobile memakai satu kolom; memilih kartu membawa pengguna ke form. Placeholder geometris memakai warna deterministik dari alamat. State loading/empty/error, badge semua phase, alasan buy nonaktif, dan link explorer tetap tersedia. Ilustrasi hero tidak merepresentasikan data harga atau prediksi.
@@ -105,3 +116,13 @@ Codex memeriksa render dengan Chromium headless: lima kartu tampil dan lebar kon
 Screenshot profil menggunakan provider wallet read-only sebagai fixture koneksi, dengan saldo dan event dari chain nyata untuk penerima transaksi Luna. Tidak menggunakan private key dan tidak menandatangani transaksi. Render profil terverifikasi (dua kepemilikan, dua event pembelian, tanpa overflow 375px); fixture ini bukan pengganti pengujian MetaMask asli.
 
 Halaman pendukung juga diuji render dengan provider read-only dan data chain nyata. Encoding launch overload, error factory, parser token precision, invariant round-trip fee, URL safety, dedupe activity dan metadata diperiksa tanpa transaksi write. Deep-link token setelah reload berhasil dan tidak ada runtime exception. Hasil ini bukan bukti transaksi bonus sudah berhasil.
+
+## Verifikasi koneksi mobile (Muse/Luna)
+
+Set Project ID pada environment build lalu deploy seluruh `dist`. Uji Android Chrome dan iOS Safari: Connect Wallet → MetaMask/Rainbow/Trust → buka aplikasi → approve → kembali ke dApp; desktop WalletConnect → scan QR → approve. Uji reconnect setelah reload, ganti akun/network di wallet, disconnect, pembatalan koneksi, lalu buy/approve/sell/launch melalui connector tersebut. Jangan menandai alur handoff sebagai lolos hanya karena modal tampil.
+
+Dependency override `cuer → qr@0.5.4` menjaga kompatibilitas API border=0 untuk QR RainbowKit; qr@0.7.2 menolak border=0 dan menyebabkan modal QR crash. Override `ws@^8.22.0` memperbarui dependency transport dengan versi patch satu major. Jangan menghapus override QR sebelum menguji modal WalletConnect secara langsung.
+
+Verifikasi integrasi wallet: `npm run check:wallet` memeriksa render URI WalletConnect melalui dependency QR asli. Production build lolos; Chromium 375/1440 px menampilkan modal tanpa overflow; layar QR WalletConnect tampil tanpa runtime exception. Provider fixture read-only lolos reconnect reload dan disconnect. Handoff aplikasi Android/iOS serta tanda tangan transaksi mobile nyata tetap memerlukan pengujian Muse/Luna.
+
+![Wallet modal mobile](screenshots/wallet-modal-mobile.png)

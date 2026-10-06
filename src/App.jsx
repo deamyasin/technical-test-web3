@@ -1,3 +1,6 @@
+import { useAccount, useConnections, useDisconnect } from 'wagmi';
+import { useConnectModal, useAccountModal } from '@rainbow-me/rainbowkit';
+import { walletConnectEnabled } from './web3/wallet.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TokenCard from './components/TokenCard.jsx';
 import BuyForm from './components/BuyForm.jsx';
@@ -8,7 +11,7 @@ import ActivityPage from './components/ActivityPage.jsx';
 import TokenDetail from './components/TokenDetail.jsx';
 import GuidePage from './components/GuidePage.jsx';
 import useRoute from './hooks/useRoute.js';
-import { publicClient, connectWallet, ensureCorrectChain, getEthBalance, fetchTokenLaunches, fetchTokensData, formatEth, shortAddress, CHAIN_ID, translateError } from './web3/client.js';
+import { publicClient, ensureCorrectChain, getEthBalance, fetchTokenLaunches, fetchTokensData, formatEth, shortAddress, CHAIN_ID, translateError } from './web3/client.js';
 import { FACTORY, ZERO_ADDRESS } from './web3/chain.js';
 import { factoryAbi } from './web3/abis.js';
 
@@ -17,7 +20,12 @@ function sortTokens(data) {
     || (a.progressBps === b.progressBps ? 0 : a.progressBps > b.progressBps ? -1 : 1));
 }
 export default function App() {
-  const [account, setAccount] = useState(null);
+  const { address, chainId, status } = useAccount();
+  const account = address || null;
+  const connections = useConnections();
+  const { disconnectAsync, isPending: disconnecting } = useDisconnect();
+  const { openConnectModal } = useConnectModal();
+  const { openAccountModal } = useAccountModal();
   const { route, navigate } = useRoute();
   const profileOpen = route.page === 'wallet';
   const setProfileOpen = (open) => navigate(open ? 'wallet' : 'explore');
@@ -25,8 +33,9 @@ export default function App() {
   const [sort, setSort] = useState('progress');
   const [phaseFilter, setPhaseFilter] = useState('all');
   const [ethBalance, setEthBalance] = useState(null);
-  const [wrongChain, setWrongChain] = useState(false);
-  const [walletBusy, setWalletBusy] = useState(false);
+  const wrongChain = Boolean(account && chainId !== CHAIN_ID);
+  const [switchingChain, setSwitchingChain] = useState(false);
+  const walletBusy = disconnecting || switchingChain || status === 'connecting' || status === 'reconnecting';
   const [walletError, setWalletError] = useState('');
   const [launchFee, setLaunchFee] = useState(null);
   const [feeError, setFeeError] = useState(false);
@@ -51,14 +60,10 @@ export default function App() {
     const version = ++walletVersion.current;
     const changed = accountRef.current?.toLowerCase() !== address?.toLowerCase();
     accountRef.current = address || null;
-    setAccount(address || null);
-    if (changed || !address) { setEthBalance(null); setWrongChain(Boolean(address)); }
+    if (changed || !address) setEthBalance(null);
     setWalletError('');
-    if (!address) { setWrongChain(false); return true; }
+    if (!address) return true;
     try {
-      const chainId = Number(await window.ethereum.request({ method: 'eth_chainId' }));
-      if (version !== walletVersion.current || !mounted.current) return;
-      setWrongChain(chainId !== CHAIN_ID);
       const balance = await getEthBalance(address);
       if (version === walletVersion.current && mounted.current) { setEthBalance(balance); return true; }
     } catch (error) {
@@ -123,35 +128,26 @@ export default function App() {
     return () => { mounted.current = false; clearInterval(id); };
   }, [refreshList, readFee, syncWallet]);
 
-  useEffect(() => {
-    const provider = window.ethereum;
-    if (!provider) return;
-    const onAccounts = (accounts) => syncWallet(accounts[0]);
-    const onChain = (chainId) => { setWrongChain(Number(chainId) !== CHAIN_ID); syncWallet(accountRef.current); };
-    const onDisconnect = () => syncWallet(null);
-    provider.on('accountsChanged', onAccounts);
-    provider.on('chainChanged', onChain);
-    provider.on('disconnect', onDisconnect);
-    return () => {
-      provider.removeListener('accountsChanged', onAccounts);
-      provider.removeListener('chainChanged', onChain);
-      provider.removeListener('disconnect', onDisconnect);
-    };
-  }, [syncWallet]);
+  useEffect(() => { syncWallet(account); }, [account, chainId, syncWallet]);
 
   useEffect(() => { if (account || lastBlockRef.current !== null) refreshList(); }, [account, refreshList]);
 
-  async function onConnect() {
-    setWalletBusy(true); setWalletError('');
-    try { await syncWallet(await connectWallet()); }
-    catch (error) { setWalletError(translateError(error)); }
-    finally { setWalletBusy(false); }
+  function onConnect() {
+    setWalletError('');
+    openConnectModal?.();
+  }
+  async function onDisconnect() {
+    setWalletError('');
+    try {
+      // Reconnect can authorize injected and EIP-6963 connectors for the same wallet.
+      for (const { connector } of connections) await disconnectAsync({ connector });
+    } catch (error) { setWalletError(translateError(error)); }
   }
   async function onSwitchChain() {
-    setWalletBusy(true); setWalletError('');
+    setSwitchingChain(true); setWalletError('');
     try { await ensureCorrectChain(); await syncWallet(accountRef.current); }
     catch (error) { setWalletError(translateError(error)); }
-    finally { setWalletBusy(false); }
+    finally { setSwitchingChain(false); }
   }
   async function onBought() {
     setBalanceVersion((v) => v + 1);
@@ -174,14 +170,15 @@ export default function App() {
         <a className="brand" href="#" onClick={() => setProfileOpen(false)} aria-label="Launchpad beranda"><div className="brand-name"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5" stroke="currentColor" strokeWidth="2" /></svg></span>launchpad<span className="brand-period">.</span></div></a>
         <nav className="main-nav" aria-label="Navigasi utama">{[['explore', 'Explore'], ['wallet', 'My wallet'], ['launch', 'Create'], ['activity', 'Activity'], ['guide', 'Guide']].map(([page, label]) => <a key={page} className={route.page === page ? 'nav-active' : ''} href={`#/${page}`}>{label}</a>)}</nav>
         <div className="network-badge"><span className="network-dot" /> Robinhood <span className="testnet-tag">TESTNET</span></div>
-        {account ? <div className="wallet"><div><div className="w-addr">{shortAddress(account)}</div><div className="w-bal">{ethBalance === null ? 'Memuat saldo…' : `${formatEth(ethBalance)} ETH`}</div></div><button className="ghost" disabled={txBusy} onClick={() => syncWallet(null)}>Disconnect</button></div>
-          : <button className="connect" disabled={walletBusy} onClick={onConnect}>{walletBusy ? 'Hubungkan di MetaMask…' : 'Connect Wallet'}</button>}
+        {account ? <div className="wallet"><div><button className="text-button w-addr" disabled={txBusy} onClick={openAccountModal} aria-label="Kelola wallet">{shortAddress(account)}</button><div className="w-bal">{ethBalance === null ? 'Memuat saldo…' : `${formatEth(ethBalance)} ETH`}</div></div><button className="ghost" disabled={txBusy || disconnecting} onClick={onDisconnect}>{disconnecting ? 'Disconnecting…' : 'Disconnect'}</button></div>
+          : <button className="connect" disabled={walletBusy} onClick={onConnect}>{walletBusy ? 'Menghubungkan wallet…' : 'Connect Wallet'}</button>}
       </header>
       <section className="intro" hidden={route.page !== 'explore'}>
         <div className="intro-copy"><div className="eyebrow"><span className="eyebrow-line" /> ONCHAIN DISCOVERY / 46630</div><h1>Before the<br /><span>breakout.</span><span className="hero-star" aria-hidden="true">✳</span></h1><p>Temukan token sejak awal. Pilih curve kamu,<br className="desktop-break" /> lalu ikuti perjalanan menuju graduation.</p><a className="hero-link" href="#/explore" onClick={(event) => { event.preventDefault(); document.getElementById('explore')?.scrollIntoView({ behavior: 'smooth' }); }}>Jelajahi token <span>↗</span></a></div>
         <CurveArtwork />
       </section>
       <div className="market-strip" hidden={route.page !== 'explore'}><div><span className="metric-label">DISCOVERED</span><b>{listState === 'loading' ? '—' : String(tokens.length).padStart(2, '0')}<small>token</small></b></div><div><span className="metric-label">ON THE CURVE</span><b>{listState === 'loading' ? '—' : String(activeCount).padStart(2, '0')}<small>aktif</small></b></div><div><span className="metric-label">GRADUATED</span><b>{listState === 'loading' ? '—' : String(graduatedCount).padStart(2, '0')}<small>pool v4</small></b></div><div className="fee-stat"><span className="metric-label">FACTORY LAUNCH FEE</span><b>{launchFee === null ? '—' : formatEth(launchFee)}<small>ETH</small></b>{feeError && <button className="text-button" onClick={readFee}>Coba lagi</button>}</div><span className="data-status"><span className="network-dot" /> {listError ? 'UPDATE DELAYED' : refreshing ? 'SYNCING CHAIN' : 'ONCHAIN DATA'}</span></div>
+      {!walletConnectEnabled && <div className="notice">Koneksi aplikasi wallet via WalletConnect belum aktif. Gunakan extension atau buka situs ini di browser MetaMask. <a href={`https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`}>Buka di MetaMask ↗</a></div>}
       {walletError && <div className="notice error" role="alert">{walletError}<button className="text-button" onClick={() => syncWallet(accountRef.current)}>Perbarui wallet</button></div>}
       {account && wrongChain && <div className="chainwarn" role="alert">Wallet berada di network lain.<button disabled={walletBusy} onClick={onSwitchChain}>{walletBusy ? 'Konfirmasi di wallet…' : 'Pindah ke Robinhood Testnet'}</button></div>}
       <div hidden={!profileOpen}><WalletProfile active={profileOpen} account={account} ethBalance={ethBalance} tokens={tokens} tokensState={listState} balanceVersion={balanceVersion} onConnect={onConnect} walletBusy={walletBusy} onTrade={(token) => { if (token) openToken(token.token); else navigate('explore'); }} /></div>
@@ -199,7 +196,7 @@ export default function App() {
         </section>
         <section className="buy-pane" id="trade" aria-label="Beli token">
           {selectedToken ? <BuyForm token={selectedToken} account={account} ethBalance={ethBalance} wrongChain={wrongChain} externalBusy={txBusy} onBought={onBought} onBusy={setTxBusy} balanceVersion={balanceVersion} onRefresh={() => refreshList()} /> : <div className="state"><div className="state-title">Pilih token untuk membeli</div><div className="state-sub">Estimasi dan detail biaya akan tampil di sini.</div></div>}
-          <p className="panel-note">Transaksi dikirim melalui MetaMask di testnet. Harga spot berbeda dari harga pembelian karena fee dan price impact.</p>
+          <p className="panel-note">Transaksi dikirim melalui wallet pilihanmu di testnet. Harga spot berbeda dari harga pembelian karena fee dan price impact.</p>
         </section>
       </main>
       <div hidden={route.page !== 'launch'}><LaunchPage active={route.page === 'launch'} account={account} wrongChain={wrongChain} ethBalance={ethBalance} globalBusy={txBusy} onBusy={setTxBusy} onConfirmed={onBought} onConnect={onConnect} walletBusy={walletBusy} onOpenToken={openToken} /></div>

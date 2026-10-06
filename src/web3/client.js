@@ -1,37 +1,20 @@
+import { getAccount, getWalletClient as getConnectedWalletClient, switchChain } from '@wagmi/core';
+import { walletConfig } from './wallet.js';
 import {
-  createPublicClient, createWalletClient, custom, http, fallback,
+  createPublicClient, http, fallback,
   decodeEventLog, decodeErrorResult, parseEther, formatEther, formatUnits,
 } from 'viem';
 import { robinhoodTestnet, FACTORY, DEPLOY_BLOCK, LOG_CHUNK, CHAIN_ID, CHAIN_ID_HEX, EXPLORER, ZERO_ADDRESS } from './chain.js';
 import { factoryAbi, curveAbi, tokenAbi } from './abis.js';
 
 export const publicClient = createPublicClient({ chain: robinhoodTestnet, transport: fallback(robinhoodTestnet.rpcUrls.default.http.map((url) => http(url, { timeout: 12000, retryCount: 1 })), { rank: false }) });
-export function getWalletClient() {
-  if (!window.ethereum) throw new Error('NO_WALLET');
-  return createWalletClient({ chain: robinhoodTestnet, transport: custom(window.ethereum) });
-}
-export async function connectWallet() {
-  const [account] = await getWalletClient().requestAddresses();
-  return account;
+export async function getWalletClient() {
+  if (!getAccount(walletConfig).isConnected) throw new Error('NO_WALLET');
+  return getConnectedWalletClient(walletConfig);
 }
 export async function ensureCorrectChain() {
-  const eth = window.ethereum;
-  if (!eth) throw new Error('NO_WALLET');
-  if (Number(await eth.request({ method: 'eth_chainId' })) === CHAIN_ID) return true;
-  try {
-    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
-  } catch (err) {
-    if (err?.code !== 4902 && err?.data?.originalError?.code !== 4902) throw err;
-    await eth.request({ method: 'wallet_addEthereumChain', params: [{
-      chainId: CHAIN_ID_HEX, chainName: robinhoodTestnet.name,
-      nativeCurrency: robinhoodTestnet.nativeCurrency,
-      rpcUrls: robinhoodTestnet.rpcUrls.default.http, blockExplorerUrls: [EXPLORER],
-    }] });
-    if (Number(await eth.request({ method: 'eth_chainId' })) !== CHAIN_ID) {
-      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
-    }
-  }
-  return Number(await eth.request({ method: 'eth_chainId' })) === CHAIN_ID;
+  await switchChain(walletConfig, { chainId: CHAIN_ID });
+  return true;
 }
 export const getEthBalance = (address) => publicClient.getBalance({ address });
 
@@ -148,10 +131,12 @@ export async function prepareBuy({ curve, quoteIn, minTokensOut, account }) {
   return { request, gasCost };
 }
 export async function buyToken(request) {
-  if (Number(await window.ethereum.request({ method: 'eth_chainId' })) !== CHAIN_ID) throw new Error('WRONG_CHAIN');
-  const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-  if (accounts[0]?.toLowerCase() !== (typeof request.account === 'string' ? request.account : request.account?.address)?.toLowerCase()) throw new Error('ACCOUNT_CHANGED');
-  return getWalletClient().writeContract({ ...request, chain: robinhoodTestnet });
+  const client = await getWalletClient();
+  if (await client.getChainId() !== CHAIN_ID) throw new Error('WRONG_CHAIN');
+  const accounts = await client.getAddresses();
+  const expected = typeof request.account === 'string' ? request.account : request.account?.address;
+  if (accounts[0]?.toLowerCase() !== expected?.toLowerCase()) throw new Error('ACCOUNT_CHANGED');
+  return client.writeContract({ ...request, chain: robinhoodTestnet });
 }
 export async function waitBuyReceipt(hash, curve, recipient, onReplaced) {
   const receipt = await publicClient.waitForTransactionReceipt({ hash, onReplaced });
@@ -197,7 +182,7 @@ export function translateError(error) {
   }
   if (/insufficient funds|exceeds the balance|insufficient_gas_balance/.test(message)) return 'Saldo ETH tidak cukup untuk pembelian dan biaya gas. Kurangi jumlah beli.';
   if (message.includes('launch_not_allowed')) return 'Wallet belum diizinkan launch. Minta pengawas mengaktifkan canLaunch untuk alamat ini.';
-  if (message.includes('no_wallet')) return 'MetaMask belum terdeteksi. Buka aplikasi di browser dengan MetaMask.';
+  if (message.includes('no_wallet')) return 'Wallet belum terhubung. Pilih Connect Wallet untuk melanjutkan.';
   if (/wrong_chain|chain mismatch/.test(message)) return 'Pindah ke Robinhood Chain Testnet sebelum membeli.';
   if (message.includes('account_changed')) return 'Akun wallet berubah. Periksa akun dan ulangi pembelian.';
   if (/timeout|timed out/.test(message)) return 'RPC belum merespons. Coba lagi; jika transaksi sudah terkirim, periksa link explorer.';

@@ -12,6 +12,7 @@ export const EXPLORER = 'https://explorer.testnet.chain.robinhood.com';
 export const robinhoodTestnet = defineChain({
   id: CHAIN_ID,
   name: 'Robinhood Chain Testnet',
+  testnet: true,
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: { http: ['https://rpc.testnet.chain.robinhood.com/rpc', 'https://robinhood-sepolia-rpc.publicnode.com'] },

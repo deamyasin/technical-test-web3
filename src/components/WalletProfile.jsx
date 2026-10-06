@@ -36,7 +36,7 @@ export default function WalletProfile({ active, account, ethBalance, tokens, tok
     try { await navigator.clipboard.writeText(account); setCopied(true); }
     catch { setCopied(false); }
   }
-  if (!account) return <section className="profile-page"><div className="eyebrow">YOUR ONCHAIN IDENTITY</div><h1>My wallet<span className="brand-period">.</span></h1><div className="profile-connect state"><div className="state-title">Portofolio dimulai dari wallet kamu.</div><p className="state-sub">Hubungkan MetaMask untuk melihat token yang dimiliki dan riwayat pembelian. Tidak perlu membuat akun atau password.</p><button className="connect" disabled={walletBusy} onClick={onConnect}>{walletBusy ? 'Konfirmasi di wallet…' : 'Connect Wallet ↗'}</button></div></section>;
+  if (!account) return <section className="profile-page"><div className="eyebrow">YOUR ONCHAIN IDENTITY</div><h1>My wallet<span className="brand-period">.</span></h1><div className="profile-connect state"><div className="state-title">Portofolio dimulai dari wallet kamu.</div><p className="state-sub">Hubungkan wallet untuk melihat token yang dimiliki dan riwayat pembelian. Tidak perlu membuat akun atau password.</p><button className="connect" disabled={walletBusy} onClick={onConnect}>{walletBusy ? 'Konfirmasi di wallet…' : 'Connect Wallet ↗'}</button></div></section>;
   return (
     <section className="profile-page">
       <div className="profile-heading"><div><div className="eyebrow">YOUR ONCHAIN IDENTITY</div><h1>My wallet<span className="brand-period">.</span></h1></div><button className="ghost" disabled={state === 'loading'} onClick={() => setRetry((v) => v + 1)}>{state === 'loading' ? 'Memperbarui…' : '↻ Refresh wallet'}</button></div>

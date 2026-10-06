@@ -56,3 +56,11 @@ Explore, wallet, create, activity, guide, dan token detail memiliki URL hash/dee
 Pemeriksaan read-only terakhir: lima token, tujuh event buy, belum ada event sell, tiga trade wallet; metadata/token activity/dedupe berhasil. Token parser menolak precision berlebih, fee round-trip buy→sell menurunkan ETH sesuai biaya, unsafe URL ditolak, encoding launch tiga argumen dan nested NotWhitelisted diterjemahkan. Render halaman pendukung 1440/375 px tidak overflow, deep-link reload berhasil, runtime exceptions nol.
 
 **Tetap belum boleh disebut seluruh acceptance terpenuhi:** hasil write MetaMask bonus, reject/revert UI inti, post-buy refetch visual, token discovery baru, submission/push, clone baru dan laporan source mismatch harus memiliki bukti. Penyerahan repository terbaru menurut Luna gagal autentikasi GitHub; kandidat perlu login/push lewat perangkatnya. Bonus hanya tuntas jika transaksi benar-benar berhasil, bukan sekadar form tersedia.
+
+## Wallet mobile — RainbowKit / WalletConnect
+
+Implementasi: RainbowKit 2 + Wagmi 2, MetaMask/Rainbow/Trust Wallet/WalletConnect dan injected EIP-6963, chain custom 46630, reconnect sesi, ganti akun/network, disconnect, dan seluruh transaksi via connector terpilih. Project ID publik sudah dikonfigurasi di `.env.local` (ignored). Deployment harus menyediakan VITE_WALLETCONNECT_PROJECT_ID saat build dan allowlist origin di Reown.
+
+Acceptance tambahan: Android Chrome/iOS Safari → buka wallet → approve → kembali ke dApp; desktop scan QR; reconnect setelah reload; reject, ganti akun/network, buy/sell/launch lewat wallet mobile. Browser smoke/fixture bukan bukti pengujian handoff aplikasi wallet nyata.
+
+Bukti pemeriksaan Codex: production build PASS; regression check QR PASS; modal 375/1440 px tanpa overflow; QR WalletConnect tampil (3 SVG), runtime exceptions 0; fixture read-only EIP-6963 reconnect setelah reload + disconnect PASS. Tidak ada transaksi ditandatangani selama pemeriksaan ini.

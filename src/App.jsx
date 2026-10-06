@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import TokenCard from './components/TokenCard.jsx';
 import BuyForm from './components/BuyForm.jsx';
 import CurveArtwork from './components/CurveArtwork.jsx';
+import WalletProfile from './components/WalletProfile.jsx';
 import { publicClient, connectWallet, ensureCorrectChain, getEthBalance, fetchTokenLaunches, fetchTokensData, formatEth, shortAddress, CHAIN_ID, translateError } from './web3/client.js';
 import { FACTORY, ZERO_ADDRESS } from './web3/chain.js';
 import { factoryAbi } from './web3/abis.js';
@@ -12,6 +13,7 @@ function sortTokens(data) {
 }
 export default function App() {
   const [account, setAccount] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [ethBalance, setEthBalance] = useState(null);
   const [wrongChain, setWrongChain] = useState(false);
   const [walletBusy, setWalletBusy] = useState(false);
@@ -153,20 +155,21 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <a className="brand" href="#" aria-label="Launchpad beranda"><div className="brand-name"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5" stroke="currentColor" strokeWidth="2" /></svg></span>launchpad<span className="brand-period">.</span></div></a>
-        <nav className="main-nav" aria-label="Navigasi utama"><a href="#explore" className="nav-active">Explore</a><a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer">Explorer <span>↗</span></a></nav>
+        <a className="brand" href="#" onClick={() => setProfileOpen(false)} aria-label="Launchpad beranda"><div className="brand-name"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 2 9 5-9 5-9-5 9-5Zm-9 10 9 5 9-5M3 17l9 5 9-5" stroke="currentColor" strokeWidth="2" /></svg></span>launchpad<span className="brand-period">.</span></div></a>
+        <nav className="main-nav" aria-label="Navigasi utama"><button className={!profileOpen ? "nav-active" : ""} onClick={() => setProfileOpen(false)}>Explore</button><button className={profileOpen ? "nav-active" : ""} onClick={() => setProfileOpen(true)}>My wallet</button><a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer">Explorer <span>↗</span></a></nav>
         <div className="network-badge"><span className="network-dot" /> Robinhood <span className="testnet-tag">TESTNET</span></div>
         {account ? <div className="wallet"><div><div className="w-addr">{shortAddress(account)}</div><div className="w-bal">{ethBalance === null ? 'Memuat saldo…' : `${formatEth(ethBalance)} ETH`}</div></div><button className="ghost" disabled={txBusy} onClick={() => syncWallet(null)}>Disconnect</button></div>
           : <button className="connect" disabled={walletBusy} onClick={onConnect}>{walletBusy ? 'Hubungkan di MetaMask…' : 'Connect Wallet'}</button>}
       </header>
-      <section className="intro">
+      <section className="intro" hidden={profileOpen}>
         <div className="intro-copy"><div className="eyebrow"><span className="eyebrow-line" /> ONCHAIN DISCOVERY / 46630</div><h1>Before the<br /><span>breakout.</span><span className="hero-star" aria-hidden="true">✳</span></h1><p>Temukan token sejak awal. Pilih curve kamu,<br className="desktop-break" /> lalu ikuti perjalanan menuju graduation.</p><a className="hero-link" href="#explore">Jelajahi token <span>↗</span></a></div>
         <CurveArtwork />
       </section>
-      <div className="market-strip"><div><span className="metric-label">DISCOVERED</span><b>{listState === 'loading' ? '—' : String(tokens.length).padStart(2, '0')}<small>token</small></b></div><div><span className="metric-label">ON THE CURVE</span><b>{listState === 'loading' ? '—' : String(activeCount).padStart(2, '0')}<small>aktif</small></b></div><div><span className="metric-label">GRADUATED</span><b>{listState === 'loading' ? '—' : String(graduatedCount).padStart(2, '0')}<small>pool v4</small></b></div><div className="fee-stat"><span className="metric-label">FACTORY LAUNCH FEE</span><b>{launchFee === null ? '—' : formatEth(launchFee)}<small>ETH</small></b>{feeError && <button className="text-button" onClick={readFee}>Coba lagi</button>}</div><span className="data-status"><span className="network-dot" /> {listError ? 'UPDATE DELAYED' : refreshing ? 'SYNCING CHAIN' : 'ONCHAIN DATA'}</span></div>
+      <div className="market-strip" hidden={profileOpen}><div><span className="metric-label">DISCOVERED</span><b>{listState === 'loading' ? '—' : String(tokens.length).padStart(2, '0')}<small>token</small></b></div><div><span className="metric-label">ON THE CURVE</span><b>{listState === 'loading' ? '—' : String(activeCount).padStart(2, '0')}<small>aktif</small></b></div><div><span className="metric-label">GRADUATED</span><b>{listState === 'loading' ? '—' : String(graduatedCount).padStart(2, '0')}<small>pool v4</small></b></div><div className="fee-stat"><span className="metric-label">FACTORY LAUNCH FEE</span><b>{launchFee === null ? '—' : formatEth(launchFee)}<small>ETH</small></b>{feeError && <button className="text-button" onClick={readFee}>Coba lagi</button>}</div><span className="data-status"><span className="network-dot" /> {listError ? 'UPDATE DELAYED' : refreshing ? 'SYNCING CHAIN' : 'ONCHAIN DATA'}</span></div>
       {walletError && <div className="notice error" role="alert">{walletError}<button className="text-button" onClick={() => syncWallet(accountRef.current)}>Perbarui wallet</button></div>}
       {account && wrongChain && <div className="chainwarn" role="alert">Wallet berada di network lain.<button disabled={walletBusy} onClick={onSwitchChain}>{walletBusy ? 'Konfirmasi di wallet…' : 'Pindah ke Robinhood Testnet'}</button></div>}
-      <main className="layout">
+      <div hidden={!profileOpen}><WalletProfile active={profileOpen} account={account} ethBalance={ethBalance} tokens={tokens} tokensState={listState} balanceVersion={balanceVersion} onConnect={onConnect} walletBusy={walletBusy} onTrade={(token) => { if (token && !txBusy) setSelected(token.token); setProfileOpen(false); }} /></div>
+      <main className="layout" hidden={profileOpen}>
         <section className="list-pane" id="explore" aria-label="Daftar token">
           <div className="pane-head"><div><h2>Explore tokens <span className="count">{tokens.length}</span></h2><p className="section-sub">Dari bonding curve ke pool. Semua berawal di sini.</p></div><button className="ghost" disabled={refreshing} onClick={() => refreshList(true)}>{refreshing ? 'Memperbarui…' : '↻ Refresh'}</button></div>
           <input className="search" aria-label="Cari token" placeholder="Cari nama, simbol, atau alamat token…" value={search} onChange={(e) => setSearch(e.target.value)} />

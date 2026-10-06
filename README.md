@@ -35,6 +35,16 @@ Jika berpindah Windows ↔ WSL/Linux, jalankan `npm ci` pada platform tujuan. De
 - **Output aktual:** decode `CurveBuy` dari alamat curve dan recipient yang benar; hash mengikuti replacement transaksi. Estimasi tidak pernah dipakai sebagai output sukses. Sesudah berhasil, data kartu, ETH, dan saldo token diambil ulang tanpa reload.
 - **UI:** tema charcoal + acid lime, tipografi Space Grotesk/IBM Plex Mono self-hosted dengan lisensi OFL di `public/fonts`, ilustrasi orbital SVG dekoratif, ringkasan dari data chain, grid kartu desktop, dan panel trading sticky. Mobile memakai satu kolom; memilih kartu membawa pengguna ke form. Placeholder geometris memakai warna deterministik dari alamat. State loading/empty/error, badge semua phase, alasan buy nonaktif, dan link explorer tetap tersedia. Ilustrasi hero tidak merepresentasikan data harga atau prediksi.
 
+## My wallet / profil
+
+Tab **My wallet** menampilkan identitas wallet, saldo ETH, token yang dimiliki atau pernah dibeli, dan riwayat pembelian. Saldo token dibaca dari `balanceOf` via Multicall3; riwayat dibangun dari event `CurveBuy` sejak deployment dengan recipient wallet. Pengambilan event memakai chunk maksimal 50.000 blok dan concurrency tiga. Cache riwayat hanya di memori dan scoped per account/curves; reload akan mengambil ulang history dari chain.
+
+Saldo saat ini berbeda dari total token pernah dibeli: hasil transfer dapat muncul tanpa history buy, dan token yang ditransfer keluar dapat bersaldo nol meskipun punya history. ETH spent menghitung quote input aktual pada event dengan buyer wallet sendiri, tanpa gas; pembelian hadiah oleh wallet lain tidak dimasukkan ke spent. Tidak menampilkan PNL atau nilai jual yang belum diverifikasi.
+
+Scope profil hanya token pair ETH dari factory tes ini, bukan semua aset wallet atau transaksi pool v4. Tidak ada password/email; wallet menjadi identitas. Profil bisa di-refresh, menangani partial balance failure, dan menjaga tracking transaksi saat pindah view.
+
+Audit requirement inti, bukti yang tersedia, test yang masih perlu dijalankan, dan bonus yang belum tersedia ada di [ACCEPTANCE.md](ACCEPTANCE.md).
+
 ## Perbedaan brief dan source verified
 
 Source curve dibaca dari [Sourcify API v2](https://sourcify.dev/server/v2/contract/46630/0x168EA1234652A5dA6bf84D2C1fD243326412B5b2?fields=sources), `src/v2/BondingCurve.sol`.
@@ -47,9 +57,9 @@ Source curve dibaca dari [Sourcify API v2](https://sourcify.dev/server/v2/contra
 
 ## Status verifikasi dan keterbatasan
 
-Implementasi dan pemeriksaan build dilakukan Codex. Testing browser/MetaMask, pembelian testnet nyata, screenshot/video, verifikasi clone baru, dan deployment ditugaskan kepada Muse AI. Catatan hasil aktual dicatat bersama di `../log-ai.txt`; jangan menganggap daftar fitur sebagai bukti bahwa testing sudah lolos.
+Implementasi/build dan visual desktop/mobile diperiksa Codex. Luna mencatat discovery 5/5 token, pembelian testnet EARLY 0.002 ETH sukses, serta deployment. Codex juga memverifikasi history profil terhadap receipt pembelian tersebut, saldo token aktual dan dedupe incremental secara read-only. Testing MetaMask UI lengkap, clone baru, dan penyerahan repository tetap memerlukan bukti tambahan dari Muse/Luna. Catatan hasil aktual dicatat bersama di `../log-ai.txt`; jangan menganggap daftar fitur sebagai bukti bahwa testing sudah lolos.
 
-- Belum ada bonus launch, sell, detail history, atau create graduated pool. Search nama/simbol/alamat sudah tersedia.
+- Belum ada bonus launch, sell, halaman detail token lengkap, atau create graduated pool. Search nama/simbol/alamat serta history pembelian wallet sudah tersedia.
 - Discovery menggunakan polling dan RPC publik; riwayat sangat panjang akan meningkatkan waktu initial load. Belum ada indexer, persistent cache, atau rekonsiliasi reorg.
 - Gas check memakai estimasi dengan headroom 20%; biaya aktual dan state chain dapat berubah sesudah simulasi.
 - Output form merupakan estimasi dari snapshot reserve. Receipt menjadi sumber output aktual; refund/partial fill dapat membuat jumlah aktual berbeda.
@@ -62,5 +72,9 @@ Screenshot desain terbaru dari aplikasi yang berjalan lokal dengan data chain ny
 
 - [Desktop 1440 px](screenshots/web3-desktop.png)
 - [Mobile 375 px](screenshots/web3-mobile.png)
+- [Profil desktop](screenshots/profile-desktop.png)
+- [Profil mobile](screenshots/profile-mobile.png)
 
 Codex memeriksa render dengan Chromium headless: lima kartu tampil dan lebar konten mobile sama dengan viewport 375 px. Screenshot ini menunjukkan UI tanpa wallet terhubung; pengujian MetaMask dan video transaksi tetap ditangani Muse/Luna. Deployment desain baru perlu mengunggah seluruh `dist`, termasuk folder `fonts`.
+
+Screenshot profil menggunakan provider wallet read-only sebagai fixture koneksi, dengan saldo dan event dari chain nyata untuk penerima transaksi Luna. Tidak menggunakan private key dan tidak menandatangani transaksi. Render profil terverifikasi (dua kepemilikan, dua event pembelian, tanpa overflow 375px); fixture ini bukan pengganti pengujian MetaMask asli.

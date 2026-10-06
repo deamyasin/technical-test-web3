@@ -174,3 +174,42 @@ h1 > span:first-of-type { color:var(--acc); }
 @media (max-width:560px) { .token-grid { grid-template-columns:1fr; gap:12px; } .card-mid { flex-wrap:nowrap; margin:21px 0 17px; } .card-top { gap:12px; } .phase { font-size:9px; } .card-name { font-size:16px; } .price { font-size:21px; } .raised { font-size:10px; } .card-bottom { font-size:9px; } .network-badge { display:none; } .topbar > .wallet { margin-left:auto; } .wallet { gap:9px; } .w-addr { font-size:10px; } .wallet .ghost { padding:8px; font-size:10px; } .brand-name { font-size:23px; } .brand-mark { margin-right:7px; } .eyebrow { font-size:9px; } .market-strip b { flex-direction:column; gap:4px; } .hero-star { font-size:37px; margin-left:12px; } .section-sub { font-size:10px; } }
 @media (max-width:360px) { h1 { font-size:56px; } .app { padding:0 12px 20px; } .hero-star { font-size:30px; } .card-select { padding:15px; } .price { font-size:18px; } .raised { font-size:9px; } .brand-mark { display:none; } }
 @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { animation:none!important; transition:none!important; } }
+
+/* Wallet profile uses contract balances and CurveBuy events, never local mock data. */
+[hidden] { display:none!important; }
+.main-nav button { border:0; padding:0; background:none; color:var(--mut); font-size:12px; position:relative; }
+.main-nav button:hover,.main-nav button.nav-active { color:var(--txt); }
+.main-nav button.nav-active::after { content:''; position:absolute; height:2px; background:var(--acc); bottom:-34px; left:0; right:0; }
+.profile-page { padding:40px 0 10px; }
+.profile-page h1 { font-size:52px; letter-spacing:-2.5px; }
+.profile-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.profile-connect { margin-top:32px; max-width:660px; padding:48px 24px; }
+.profile-address { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin:28px 0; padding:22px; border:1px solid var(--line); background:var(--panel); border-radius:6px; }
+.wallet-avatar { height:48px; width:48px; background:var(--acc); color:var(--bg); font:18px var(--mono); display:flex; align-items:center; justify-content:center; border-radius:8px; }
+.profile-address > div:nth-child(2) { min-width:0; flex:1; }
+.profile-address b { font:15px var(--mono); }
+.profile-address p { font:9px var(--mono); color:var(--mut); margin-top:8px; overflow-wrap:anywhere; }
+.profile-stats { margin-bottom:16px; }
+.profile-stats > div { flex:1; }
+.profile-scope { color:var(--mut); font-size:11px; line-height:1.8; max-width:900px; margin-bottom:28px; }
+.holdings-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.holding-card { border:1px solid var(--line); border-radius:6px; background:var(--panel); padding:20px; display:flex; flex-wrap:wrap; align-items:start; justify-content:space-between; gap:16px 8px; }
+.holding-card h3 { font-size:16px; letter-spacing:-.4px; }
+.holding-balance { width:100%; margin:10px 0; }
+.holding-balance b { font:21px var(--mono); display:block; overflow-wrap:anywhere; }
+.holding-balance small { font:10px var(--mono); color:var(--mut); display:block; margin-top:8px; }
+.holding-footer { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--line); padding-top:14px; font-size:10px; }
+.history-heading { margin-top:36px; }
+.history-list { border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.history-row { padding:18px 20px; display:flex; align-items:center; gap:18px; background:var(--panel); border-bottom:1px solid var(--line); }
+.history-row:last-child { border:0; }
+.history-kind { width:32px; height:32px; color:var(--acc); background:#222e16; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.history-row b { font-size:12px; }
+.history-row p { font:9px var(--mono); color:var(--mut); margin-top:6px; }
+.history-amount { margin-left:auto; text-align:right; min-width:0; }
+.history-amount b { color:var(--acc); font:12px var(--mono); overflow-wrap:anywhere; }
+.history-amount span { display:block; color:var(--mut); font:9px var(--mono); margin-top:6px; }
+@media (max-width:1100px) { .topbar { gap:16px; } .main-nav { gap:18px; } .holdings-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:900px) { .topbar { flex-wrap:wrap; padding-top:18px; gap:14px; } .main-nav { display:flex; order:5; height:44px; width:100%; gap:28px; } .main-nav button.nav-active::after { bottom:-15px; } .main-nav a.nav-active::after { bottom:-15px; } .profile-address p { max-width:100%; } }
+@media (max-width:760px) { .profile-page { padding-top:28px; } .profile-page h1 { font-size:40px; } .profile-stats > div { flex:initial; } .profile-address { padding:16px; gap:12px; } .profile-address > .ghost,.profile-address > .addr { flex:1; text-align:center; } }
+@media (max-width:560px) { .holdings-grid { grid-template-columns:1fr; } .profile-heading { flex-wrap:wrap; } .history-row { padding:15px 12px; flex-wrap:wrap; gap:10px; } .history-row > div:nth-child(2) { flex:1; } .history-amount { width:calc(100% - 44px); text-align:left; margin-left:42px; } .history-row > a { margin-left:auto; } .history-row p { font-size:8px; } .profile-stats b { font-size:14px; } .profile-scope { font-size:10px; } }

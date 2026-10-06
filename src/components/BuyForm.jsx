@@ -112,8 +112,8 @@ export default function BuyForm({ token, account, ethBalance, wrongChain, onBoug
 
   return (
     <div className="buyform">
-      <div className="eyebrow">TRADE · BONDING CURVE</div>
-      <div className="buy-head"><div><h2 className="buy-title">Beli ${token.symbol}</h2><div className="buy-sub">Curve {shortAddress(token.curve)}</div></div><span className="trade-icon">↗</span></div>
+      <div className="trade-tabs"><span className="trade-tab-active">BUY TOKEN</span><span className="trade-network"><i className="network-dot" /> ETH PAIR</span></div>
+      <div className="buy-head"><div><h2 className="buy-title">Beli ${token.symbol}</h2><div className="buy-sub">Curve {shortAddress(token.curve)}</div></div><span className="trade-icon" aria-hidden="true">Ξ</span></div>
       <div className="balance-strip"><span>Saldo ETH</span><b>{account ? ethBalance === null ? 'Belum tersedia' : `${formatEth(ethBalance)} ETH` : 'Wallet belum terhubung'}</b></div>
       {account && <div className="bal-row">Saldo ${token.symbol}: <b>{tokenBal === null ? balanceError ? 'Gagal dibaca' : 'Memuat…' : formatTokens(tokenBal, token.decimals)}</b>{balanceError && <button className="text-button" onClick={() => setBalanceRetry((v) => v + 1)}>Coba lagi</button>}</div>}
       <label className="field"><span>Jumlah ETH</span><div className="input-row"><input aria-describedby="amount-hint" inputMode="decimal" autoComplete="off" placeholder="0.01" value={ethIn} onChange={(e) => setEthIn(e.target.value)} disabled={busy} /><span className="input-unit">ETH</span></div></label>

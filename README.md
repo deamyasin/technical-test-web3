@@ -33,7 +33,7 @@ Jika berpindah Windows ↔ WSL/Linux, jalankan `npm ci` pada platform tujuan. De
 - **Wallet:** injected MetaMask, add/switch chain, listener akun/network/disconnect dengan cleanup, serta perlindungan terhadap respons saldo untuk akun lama.
 - **Transaksi:** simulasi dan gas diperiksa otomatis setelah input berhenti 450 ms; tombol beli aktif setelah saldo termasuk headroom gas terverifikasi. Simulasi diulang sebelum pengiriman, disertai pemeriksaan akun/network sebelum write, `value = quoteIn`, recipient wallet. State memisahkan pemeriksaan, konfirmasi wallet, pending, sukses, gagal, dan status receipt yang belum diketahui. Jika receipt belum terbaca, buy tetap dikunci dan tersedia pengecekan ulang tanpa mengirim transaksi kedua.
 - **Output aktual:** decode `CurveBuy` dari alamat curve dan recipient yang benar; hash mengikuti replacement transaksi. Estimasi tidak pernah dipakai sebagai output sukses. Sesudah berhasil, data kartu, ETH, dan saldo token diambil ulang tanpa reload.
-- **UI:** kartu token, panel trading sticky desktop, satu kolom mobile, placeholder logo, state loading/empty/error, badge semua phase, alasan buy nonaktif, dan link explorer.
+- **UI:** tema charcoal + acid lime, tipografi Space Grotesk/IBM Plex Mono self-hosted dengan lisensi OFL di `public/fonts`, ilustrasi orbital SVG dekoratif, ringkasan dari data chain, grid kartu desktop, dan panel trading sticky. Mobile memakai satu kolom; memilih kartu membawa pengguna ke form. Placeholder geometris memakai warna deterministik dari alamat. State loading/empty/error, badge semua phase, alasan buy nonaktif, dan link explorer tetap tersedia. Ilustrasi hero tidak merepresentasikan data harga atau prediksi.
 
 ## Perbedaan brief dan source verified
 
@@ -58,4 +58,9 @@ Implementasi dan pemeriksaan build dilakukan Codex. Testing browser/MetaMask, pe
 
 Muse AI membuat implementasi awal dan bertanggung jawab atas testing/deployment. Codex mengaudit brief/ABI, memperbaiki discovery dan decoding, mengerjakan matematika/wallet/transaksi/refetch, merapikan UI, serta memperbarui dokumentasi. Kandidat perlu memahami dan memverifikasi semua bagian untuk demo dan sesi perubahan kode.
 
-Muse AI perlu menyertakan screenshot desktop/mobile atau video pendek transaksi nyata di `screenshots/` atau `demo/`, lalu memperbarui bagian ini dengan path dan hasil testing. Artefak visual **belum dibuat oleh Codex**.
+Screenshot desain terbaru dari aplikasi yang berjalan lokal dengan data chain nyata:
+
+- [Desktop 1440 px](screenshots/web3-desktop.png)
+- [Mobile 375 px](screenshots/web3-mobile.png)
+
+Codex memeriksa render dengan Chromium headless: lima kartu tampil dan lebar konten mobile sama dengan viewport 375 px. Screenshot ini menunjukkan UI tanpa wallet terhubung; pengujian MetaMask dan video transaksi tetap ditangani Muse/Luna. Deployment desain baru perlu mengunggah seluruh `dist`, termasuk folder `fonts`.
